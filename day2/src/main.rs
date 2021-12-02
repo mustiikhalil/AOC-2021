@@ -2,9 +2,7 @@ use std::env;
 use std::fs;
 use std::fmt;
 use std::io::{Error, ErrorKind};
-    ///
-    /// // errors can be created from strings
-    /// let custom_error = Error::new(ErrorKind::Other, "oh no!");
+
 enum Direction {
   Forward(i32),
   Up(i32),
