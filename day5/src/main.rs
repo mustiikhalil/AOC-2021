@@ -3,14 +3,21 @@ use std::fs;
 
 #[derive(Debug)]
 struct Coords {
-    x: i32,
-    y: i32,
+    x: usize,
+    y: usize,
+}
+
+impl Eq for Coords {}
+impl PartialEq for Coords {
+
+    fn eq(&self, other: &Self) -> bool {
+        self.x == other.x && self.y == other.y
+    }
 }
 
 impl Coords {
     fn new(s: &str) -> Coords {
         let v: Vec<&str> = s.split(",").collect();
-        println!("s: {:?}", v);
         return Coords {
             x: v[0].parse().unwrap(),
             y: v[1].parse().unwrap()
@@ -22,6 +29,15 @@ impl Coords {
 struct Directions {
     from: Coords,
     to: Coords,
+}
+
+impl Eq for Directions {}
+
+impl PartialEq for Directions {
+
+    fn eq(&self, other: &Self) -> bool {
+        self.from == other.from && self.to == other.to
+    }
 }
 
 impl Directions {
@@ -36,52 +52,40 @@ impl Directions {
 
 #[derive(Debug)]
 struct Board {
-    board: Vec<Vec<i32>>,
+    board: Vec<Vec<usize>>,
 }
 
 impl Board {
     fn new(directions: &Vec<Directions>) -> Board {
-        let mut max_y = 0;
-        let mut max_x = 0;
+        let mut max: usize = 0;
 
         for direction in directions {
-            max_x = std::cmp::max(max_x, direction.to.x);
-            max_x = std::cmp::max(max_x, direction.from.x);
-            max_y = std::cmp::max(max_y, direction.to.y);
-            max_y = std::cmp::max(max_y, direction.from.y);
+            max = max.max(direction.to.x).max(direction.from.x);
+            max = max.max(direction.to.y).max(direction.from.y);
         }
-        let mut new_vec: Vec<Vec<i32>> = Vec::new();
 
-        let grid = std::cmp::max(max_x + 1, max_y + 1);
-        for i in 0..grid {
-            new_vec.push(Vec::new());
-            for _ in 0..grid {
-                new_vec[i as usize].push(0);
-            }
-        }
+        // Making sure we have max value + 1
+        max = max + 1;
         return Board {
-            board: new_vec,
+            board: vec![vec![0; max]; max],
         }
     }
 
     fn solve(&mut self, directions: &Vec<Directions>) {
         for direction in directions {
-            println!("direction: {:?}", direction);
             if direction.to.x == direction.from.x {
-                let stride = if direction.from.y < direction.to.y {
-                    direction.from.y..direction.to.y+1
-                } else {
-                    direction.to.y..direction.from.y+1
+                let stride = match direction.from.y < direction.to.y {
+                    true => direction.from.y..=direction.to.y,
+                    false => direction.to.y..=direction.from.y
                 };
                 for i in stride {
                     self.board[i as usize][direction.from.x as usize] += 1;
                 }
             }
             if direction.to.y == direction.from.y {
-                let stride = if direction.from.x < direction.to.x {
-                    direction.from.x..direction.to.x+1
-                } else {
-                    direction.to.x..direction.from.x+1
+                let stride = match direction.from.x < direction.to.x {
+                    true => direction.from.x..=direction.to.x,
+                    false => direction.to.x..=direction.from.x
                 };
                 for i in stride {
                     self.board[direction.from.y as usize][i as usize] += 1;
@@ -104,13 +108,11 @@ impl Board {
 }
 
 fn main() {
-    let env: Vec<String> = env::args().collect();
-    let filename = &env[1];
+    let filename: String = env::args().last().unwrap();
     let file = fs::read_to_string(filename).expect("Error: couldnt find file");
-    let directions: Vec<Directions> = file.split("\n").map(|x| Directions::new(&x)).collect();
-    let boxed = Box::new(directions);
-    let mut board = Board::new(&boxed);
-    board.solve(&boxed);
+    let directions: Vec<Directions> = file.lines().map(|x| Directions::new(&x)).collect();
+    let mut board = Board::new(&directions);
+    board.solve(&directions);
     board.print();
 }
 
